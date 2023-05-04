@@ -23,6 +23,7 @@ module ActiveForce
         association_builder = @value.class.name.gsub('::', '_')
         ActiveForce::Association.const_get "BuildFrom#{association_builder}"
       rescue NameError
+        # Value
         raise "Don't know how to build relation from #{@value.class.name}"
       end
     end
@@ -37,6 +38,12 @@ module ActiveForce
 
       def call
         raise "Must implement #{self.class.name}#call"
+      end
+    end
+
+    class Value < AbstractBuildFrom
+      def call
+        value
       end
     end
 

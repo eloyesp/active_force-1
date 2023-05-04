@@ -93,13 +93,25 @@ module ActiveForce
     end
 
     def includes(*relations)
-      relations.each do |relation|
-        association = sobject.associations[relation]
-        fields Association::EagerLoadProjectionBuilder.build association
-        # downcase the key and downcase when we do the comparison so we don't do any more crazy string manipulation
-        association_mapping[association.sfdc_association_field.downcase] = association.relation_name
-      end
+      process_includes(relations)
       self
+    end
+
+    def process_includes(relations, parent_associations=[])
+      relations = relations.each_with_object({}) { |relation, result| relation.is_a?(Hash) ? result.merge!(relation) : result[relation] = [] }
+      relations.each do |relation, (*child_relations)|
+        child_relations.compact!
+        association = (parent_associations.last&.relation_model || sobject).find_association(relation)
+
+        raise ArgumentError.new("Association #{parent_associations.map(&:relation_name).join('.')} #{relation} not found ") if association.nil?
+
+        fields Association::EagerLoadProjectionBuilder.build association, parent_associations
+
+        process_includes(child_relations, parent_associations + [association]) if child_relations.present?
+
+        # downcase the key and downcase when we do the comparison so we don't do any more crazy string manipulation
+        # association_mapping[association.sfdc_association_field.downcase] = association.relation_name
+      end
     end
 
     def none

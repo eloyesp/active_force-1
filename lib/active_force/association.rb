@@ -12,7 +12,9 @@ module ActiveForce
     end
 
     def find_association name
-      associations[name.to_sym]
+      return associations[name.to_sym] if associations.key?(name.to_sym)
+
+      associations.values.find { |a| a.sfdc_association_field.to_s.downcase == name.to_s.downcase }
     end
 
     def has_many relation_name, options = {}
